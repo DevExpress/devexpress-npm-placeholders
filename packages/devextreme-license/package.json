@@ -1,0 +1,28 @@
+{
+  "name": "devextreme-license",
+  "version": "0.0.1",
+  "description": "Placeholder published by DevExpress. The devextreme-license CLI is distributed as part of the DevExtreme component package.",
+  "keywords": [
+    "devextreme",
+    "devexpress",
+    "license",
+    "placeholder",
+    "security"
+  ],
+  "homepage": "https://js.devexpress.com/",
+  "author": "Developer Express Inc.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DevExpress/devexpress-npm-placeholders.git",
+    "directory": "packages/devextreme-license"
+  },
+  "bin": "bin/devextreme-license.js",
+  "main": "bin/devextreme-license.js",
+  "files": [
+    "bin"
+  ],
+  "engines": {
+    "node": ">=14"
+  }
+}

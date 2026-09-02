@@ -1,0 +1,28 @@
+{
+  "name": "devextreme-bundler",
+  "version": "0.0.1",
+  "description": "Placeholder published by DevExpress. The devextreme-bundler CLI is distributed as part of the DevExtreme component package.",
+  "keywords": [
+    "devextreme",
+    "devexpress",
+    "bundler",
+    "placeholder",
+    "security"
+  ],
+  "homepage": "https://js.devexpress.com/",
+  "author": "Developer Express Inc.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DevExpress/devexpress-npm-placeholders.git",
+    "directory": "packages/devextreme-bundler"
+  },
+  "bin": "bin/devextreme-bundler.js",
+  "main": "bin/devextreme-bundler.js",
+  "files": [
+    "bin"
+  ],
+  "engines": {
+    "node": ">=14"
+  }
+}

@@ -1,0 +1,144 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: true
+        description: Publishing version (tag name)
+      devextreme-license:
+        type: boolean
+        default: true
+        description: Publish devextreme-license
+      devextreme-bundler:
+        type: boolean
+        default: true
+        description: Publish devextreme-bundler
+      devextreme-bundler-init:
+        type: boolean
+        default: true
+        description: Publish devextreme-bundler-init
+      dry-run:
+        type: boolean
+        default: true
+        description: Dry run (uncheck to actually publish)
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      packages: ${{ steps.select.outputs.packages }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.version }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Select packages
+        id: select
+        env:
+          DEVEXTREME_LICENSE: ${{ inputs.devextreme-license }}
+          DEVEXTREME_BUNDLER: ${{ inputs.devextreme-bundler }}
+          DEVEXTREME_BUNDLER_INIT: ${{ inputs.devextreme-bundler-init }}
+        run: |
+          selected=()
+          [ "$DEVEXTREME_LICENSE" = true ] && selected+=(devextreme-license)
+          [ "$DEVEXTREME_BUNDLER" = true ] && selected+=(devextreme-bundler)
+          [ "$DEVEXTREME_BUNDLER_INIT" = true ] && selected+=(devextreme-bundler-init)
+
+          if [ ${#selected[@]} -eq 0 ]; then
+            echo "Error: no packages selected"
+            exit 1
+          fi
+
+          packages=$(printf '%s\n' "${selected[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "Publishing: $packages"
+          echo "packages=$packages" >> "$GITHUB_OUTPUT"
+
+      - name: Test
+        run: pnpm test
+
+      - name: Pack packages
+        env:
+          PACKAGES: ${{ steps.select.outputs.packages }}
+        run: |
+          mkdir -p dist
+          for name in $(jq -r '.[]' <<< "$PACKAGES"); do
+            pnpm --dir "packages/$name" pack --out "$GITHUB_WORKSPACE/dist/$name.tgz"
+          done
+          ls -l dist
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: dist/*.tgz
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-slim
+    environment: npmjs
+    permissions:
+      id-token: write # Required for OIDC (Trusted Publishing)
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.build.outputs.packages) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.version }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download packages
+        uses: actions/download-artifact@v7
+        with:
+          name: packages
+          path: dist
+
+      - name: Publish ${{ matrix.package }}${{ inputs.dry-run && ' (dry run)' || '' }}
+        env:
+          DRY_RUN: "${{ inputs.dry-run }}"
+          PACKAGE_TGZ: dist/${{ matrix.package }}.tgz
+        run: |
+          if [ ! -f "$PACKAGE_TGZ" ]; then
+            echo "Error: $PACKAGE_TGZ not found"
+            exit 1
+          fi
+
+          if [ "$DRY_RUN" = false ]; then
+            pnpm publish "$PACKAGE_TGZ" --provenance --no-git-checks
+            echo "Published ${{ matrix.package }}." >> "$GITHUB_STEP_SUMMARY"
+          else
+            pnpm publish "$PACKAGE_TGZ" --provenance --no-git-checks --dry-run
+            echo "DRY RUN: nothing was published. Uncheck \"Dry run\" to publish for real." \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi
