@@ -17,7 +17,9 @@
     "url": "git+https://github.com/DevExpress/devexpress-npm-placeholders.git",
     "directory": "packages/devextreme-license"
   },
-  "bin": "bin/devextreme-license.js",
+  "bin": {
+    "devextreme-license": "bin/devextreme-license.js"
+  },
   "main": "bin/devextreme-license.js",
   "files": [
     "bin"

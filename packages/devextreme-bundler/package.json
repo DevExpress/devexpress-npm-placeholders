@@ -17,7 +17,9 @@
     "url": "git+https://github.com/DevExpress/devexpress-npm-placeholders.git",
     "directory": "packages/devextreme-bundler"
   },
-  "bin": "bin/devextreme-bundler.js",
+  "bin": {
+    "devextreme-bundler": "bin/devextreme-bundler.js"
+  },
   "main": "bin/devextreme-bundler.js",
   "files": [
     "bin"
